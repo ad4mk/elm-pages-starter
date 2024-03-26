@@ -1,4 +1,4 @@
-module Route.About exposing (Model, Msg, RouteParams, route, Data, ActionData)
+port module Route.About exposing (Model, Msg, RouteParams, route, Data, ActionData)
 
 {-|
 
@@ -13,26 +13,35 @@ import FatalError
 import Head
 import Head.Seo as Seo
 import Html
+import Html.Events exposing (onClick)
 import Pages.Url
 import PagesMsg
 import RouteBuilder
 import Server.Request
 import Server.Response
 import Shared
+import Task
 import UrlPath
 import View
 
 
 type alias Model =
-    {}
+    { displayString : Int
+    }
 
 
 type Msg
     = NoOp
+    | TestFirst
+    | TestSecond
+    | SendMessage String
 
 
 type alias RouteParams =
     {}
+
+
+port sendMessageToJs : String -> Cmd msg
 
 
 route : RouteBuilder.StatefulRoute RouteParams Data ActionData Model Msg
@@ -51,7 +60,9 @@ init :
     -> Shared.Model
     -> ( Model, Effect.Effect Msg )
 init app shared =
-    ( {}, Effect.none )
+    ( { displayString = 0 }
+    , Effect.Cmd (Task.perform (always (SendMessage "About paged loaded from About.elm")) (Task.succeed ()))
+    )
 
 
 update :
@@ -63,7 +74,18 @@ update :
 update app shared msg model =
     case msg of
         NoOp ->
-            ( model, Effect.none )
+            ( model, Effect.None )
+
+        TestFirst ->
+            ( { model | displayString = model.displayString + 1 }
+            , Effect.Cmd (Task.perform (always TestSecond) (Task.succeed ()))
+            )
+
+        TestSecond ->
+            ( { model | displayString = model.displayString + 1 }, Effect.none )
+
+        SendMessage message ->
+            ( model, Effect.Cmd (sendMessageToJs message) )
 
 
 subscriptions : RouteParams -> UrlPath.UrlPath -> Shared.Model -> Model -> Sub Msg
@@ -115,6 +137,8 @@ view app shared model =
     , body =
         [ Html.h2 []
             [ Html.text "New Page Testing" ]
+        , Html.button [ onClick (PagesMsg.fromMsg TestFirst) ]
+            [ Html.text ("Click Me: " ++ String.fromInt model.displayString) ]
         ]
     }
 

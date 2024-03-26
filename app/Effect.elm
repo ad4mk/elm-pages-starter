@@ -1,4 +1,4 @@
-module Effect exposing (Effect(..), batch, fromCmd, map, none, perform)
+port module Effect exposing (Effect(..), batch, fromCmd, map, none, perform)
 
 {-|
 
@@ -30,6 +30,7 @@ type Effect msg
         , toMsg : Result Http.Error Url -> msg
         }
     | SubmitFetcher (Pages.Fetcher.Fetcher msg)
+    | SendMessage String
 
 
 {-| -}
@@ -37,6 +38,9 @@ type alias RequestInfo =
     { contentType : String
     , body : String
     }
+
+
+port sendMessageToJs_Effect : String -> Cmd msg
 
 
 {-| -}
@@ -93,6 +97,9 @@ map fn effect =
                 |> Pages.Fetcher.map fn
                 |> SubmitFetcher
 
+        SendMessage message ->
+            SendMessage message
+
 
 {-| -}
 perform :
@@ -145,6 +152,9 @@ perform ({ fromPageMsg, key } as helpers) effect =
 
         SubmitFetcher record ->
             helpers.runFetcher record
+
+        SendMessage message ->
+            sendMessageToJs_Effect message
 
 
 type alias FormData =
